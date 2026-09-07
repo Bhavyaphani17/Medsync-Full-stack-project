@@ -5,31 +5,17 @@ FROM maven:3.9.11-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
-# Copy the actual project files
+# Copy root parent POM
+COPY pom.xml .
+
+# Copy common module
 COPY common ./common
+
+# Copy patient-service module
 COPY patient-service/patient-service ./patient-service/patient-service
 
-# Create a minimal Maven reactor containing only
-# common + patient-service
-RUN printf '%s\n' \
-'<?xml version="1.0" encoding="UTF-8"?>' \
-'<project xmlns="http://maven.apache.org/POM/4.0.0"' \
-'         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
-'         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">' \
-'  <modelVersion>4.0.0</modelVersion>' \
-'  <groupId>com.medsync</groupId>' \
-'  <artifactId>medsync-patient-build</artifactId>' \
-'  <version>0.0.1-SNAPSHOT</version>' \
-'  <packaging>pom</packaging>' \
-'  <modules>' \
-'    <module>common</module>' \
-'    <module>patient-service/patient-service</module>' \
-'  </modules>' \
-'</project>' \
-> /app/docker-pom.xml
-
-# Build common and patient-service
-RUN mvn -f docker-pom.xml -pl patient-service/patient-service -am clean package -DskipTests
+# Build common + patient-service
+RUN mvn -pl patient-service/patient-service -am clean package -DskipTests
 
 
 # =========================
