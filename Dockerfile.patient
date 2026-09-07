@@ -6,14 +6,14 @@ COPY pom.xml .
 COPY common ./common
 COPY patient-service ./patient-service
 
-RUN mvn -pl patient-service/patient-service -am clean package -DskipTests
+RUN mvn -f patient-service/patient-service/pom.xml clean package -DskipTests
 
 FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-COPY --from=build /app/patient-service/patient-service/target/patient-service-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /app/patient-service/patient-service/target/*.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT:-8080}"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
