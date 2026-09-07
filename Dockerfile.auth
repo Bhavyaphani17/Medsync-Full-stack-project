@@ -1,12 +1,10 @@
-FROM eclipse-temurin:21-jdk
+FROM maven:3.9.9-eclipse-temurin-21
 
 WORKDIR /app
 
 COPY . .
 
-RUN chmod +x mvnw 2>/dev/null || true
-
-RUN ./mvnw -pl auth-service/auth-service -am clean package -DskipTests
+RUN mvn -pl auth-service/auth-service -am clean package -DskipTests
 
 EXPOSE 8081
 
