@@ -2,11 +2,21 @@ FROM maven:3.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
+# Copy parent pom
 COPY pom.xml .
+
+# Copy common module
 COPY common ./common
+
+# Build and install common module
+RUN mvn -f common/pom.xml clean install -DskipTests
+
+# Copy patient service
 COPY patient-service ./patient-service
 
+# Build patient service
 RUN mvn -f patient-service/patient-service/pom.xml clean package -DskipTests
+
 
 FROM eclipse-temurin:21-jre
 
