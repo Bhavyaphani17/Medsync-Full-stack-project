@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Discharge Summary</title>
+    <style type="text/css">
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 12px; color: #222222; }
+        h1 { font-size: 20px; color: #1a5276; border-bottom: 2px solid #1a5276; padding-bottom: 6px; }
+        .section { margin-top: 16px; }
+        .label { font-weight: bold; color: #555555; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        td { padding: 4px 0; vertical-align: top; }
+        .footer { margin-top: 30px; font-size: 10px; color: #888888; }
+    </style>
+</head>
+<body>
+<h1>MedSync — Discharge Summary</h1>
+
+<table>
+    <tr><td class="label">Patient Name:</td><td th:text="${patientName}">Patient Name</td></tr>
+    <tr><td class="label">Patient Email:</td><td th:text="${patientEmail}">Email</td></tr>
+    <tr><td class="label">Attending Doctor:</td><td th:text="${doctorName}">Doctor</td></tr>
+    <tr><td class="label">Department:</td><td th:text="${department}">Department</td></tr>
+    <tr><td class="label">Date Generated:</td><td th:text="${generatedDate}">Date</td></tr>
+</table>
+
+<div class="section">
+    <p class="label">Diagnosis</p>
+    <p th:text="${diagnosis}">Diagnosis text</p>
+</div>
+
+<div class="section">
+    <p class="label">Treatment Summary</p>
+    <p th:text="${treatmentSummary}">Treatment summary text</p>
+</div>
+
+<div class="section">
+    <p class="label">Medications</p>
+    <p th:text="${medications}">Medications text</p>
+</div>
+
+<div class="section">
+    <p class="label">Follow-up Instructions</p>
+    <p th:text="${followUpInstructions}">Follow-up text</p>
+</div>
+
+<div class="footer">
+    <p>This document was generated automatically by the MedSync Hospital Management System.</p>
+</div>
+</body>
+</html>

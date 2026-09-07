@@ -1,0 +1,56 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: auth-service
+              uri: lb://AUTH-SERVICE
+              predicates:
+                - Path=/auth/**
+
+            - id: patient-service
+              uri: lb://PATIENT-SERVICE
+              predicates:
+                - Path=/patients/**
+
+            - id: doctor-service
+              uri: lb://DOCTOR-SERVICE
+              predicates:
+                - Path=/doctors/**
+
+            - id: appointment-service
+              uri: lb://APPOINTMENT-SERVICE
+              predicates:
+                - Path=/appointments/**
+
+            - id: notification-service
+              uri: lb://NOTIFICATION-SERVICE
+              predicates:
+                - Path=/notifications/**
+
+            - id: storage-service
+              uri: lb://STORAGE-SERVICE
+              predicates:
+                - Path=/storage/**
+
+            - id: hospital-management-service
+              uri: lb://HOSPITAL-MANAGEMENT-SERVICE
+              predicates:
+                - Path=/hospital/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+jwt:
+  secret: ${JWT_SECRET:medsync-super-secret-key-change-in-production-min-32-chars}
+  expiration: ${JWT_EXPIRATION:86400000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
