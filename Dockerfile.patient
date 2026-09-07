@@ -1,25 +1,30 @@
-FROM maven:3.9-eclipse-temurin-21 AS build
+# =========================
+# Build stage
+# =========================
+FROM maven:3.9.11-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
-# Copy the parent Maven POM
-COPY pom.xml ./pom.xml
+# Copy root pom
+COPY pom.xml .
 
-# Copy the shared common module
+# Copy common module
 COPY common ./common
 
-# Copy patient service
-COPY patient-service ./patient-service
+# Copy patient-service module
+COPY patient-service/patient-service ./patient-service/patient-service
 
-# Build common first, then patient-service
-RUN mvn -f pom.xml -pl patient-service/patient-service -am clean package -DskipTests
+# Build common + patient-service
+RUN mvn -pl patient-service/patient-service -am clean package -DskipTests
 
 
+# =========================
+# Runtime stage
+# =========================
 FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-# Copy the generated patient-service JAR
 COPY --from=build /app/patient-service/patient-service/target/*.jar app.jar
 
 EXPOSE 8080
