@@ -1,18 +1,23 @@
-FROM eclipse-temurin:21-jdk
+FROM maven:3.9.9-eclipse-temurin-17 AS build
 
 WORKDIR /app
 
-COPY .mvn .mvn
-COPY mvnw .
 COPY pom.xml .
+COPY doctor-service/pom.xml doctor-service/pom.xml
 
-RUN chmod +x mvnw
-RUN ./mvnw dependency:go-offline -B
+RUN mvn dependency:go-offline -pl doctor-service -am -DskipTests
 
-COPY src src
+COPY . .
 
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -pl doctor-service -am -DskipTests
 
-EXPOSE 10000
 
-CMD ["sh", "-c", "java -jar target/*.jar"]
+FROM eclipse-temurin:17-jre
+
+WORKDIR /app
+
+COPY --from=build /app/doctor-service/target/*.jar app.jar
+
+EXPOSE 8083
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
