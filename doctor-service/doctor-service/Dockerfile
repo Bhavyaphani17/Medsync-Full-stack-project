@@ -2,10 +2,7 @@ FROM maven:3.9.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
-COPY pom.xml .
-
-COPY common ./common
-COPY doctor-service/doctor-service ./doctor-service/doctor-service
+COPY . .
 
 RUN mvn -pl doctor-service/doctor-service -am clean package -DskipTests
 
