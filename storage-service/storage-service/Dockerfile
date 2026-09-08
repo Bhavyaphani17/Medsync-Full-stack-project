@@ -12,6 +12,6 @@ WORKDIR /app
 
 COPY --from=build /app/storage-service/storage-service/target/*.jar app.jar
 
-EXPOSE 8086
+EXPOSE 10000
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
