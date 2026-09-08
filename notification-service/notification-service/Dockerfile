@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN mvn -B -pl notification-service/notification-service -am clean package spring-boot:repackage -DskipTests
+RUN mvn -B -pl notification-service/notification-service -am clean package -DskipTests
 
 FROM eclipse-temurin:21-jre
 
@@ -12,6 +12,6 @@ WORKDIR /app
 
 COPY --from=build /app/notification-service/notification-service/target/*.jar app.jar
 
-EXPOSE 10000
+EXPOSE 8085
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
