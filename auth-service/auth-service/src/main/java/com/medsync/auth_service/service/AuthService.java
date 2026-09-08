@@ -31,6 +31,7 @@ public class AuthService {
 
     @Transactional
     public UserResponse register(RegisterRequest request) {
+
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new BadRequestException("Email already exists");
         }
@@ -42,89 +43,141 @@ public class AuthService {
                 .role(request.getRole())
                 .build();
 
-        User saved = userRepository.save(user);
-        return toUserResponse(saved);
+        User savedUser = userRepository.save(user);
+
+        return toUserResponse(savedUser);
     }
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() ->
+                        new UnauthorizedException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(
+                request.getPassword(),
+                user.getPassword())) {
+
             throw new UnauthorizedException("Invalid email or password");
         }
 
+        // Remove old refresh tokens for this user
         refreshTokenRepository.deleteByUser_Id(user.getId());
+
         return buildLoginResponse(user);
     }
 
     @Transactional
     public LoginResponse refreshToken(RefreshTokenRequest request) {
-        RefreshToken storedToken = refreshTokenRepository.findByToken(request.getRefreshToken())
-                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
-        if (storedToken.isRevoked() || storedToken.getExpiryDate().isBefore(Instant.now())) {
-            throw new UnauthorizedException("Refresh token expired or revoked");
+        RefreshToken storedToken =
+                refreshTokenRepository.findByToken(request.getRefreshToken())
+                        .orElseThrow(() ->
+                                new UnauthorizedException("Invalid refresh token"));
+
+        if (storedToken.isRevoked()) {
+            throw new UnauthorizedException("Refresh token has been revoked");
+        }
+
+        if (storedToken.getExpiryDate().isBefore(Instant.now())) {
+            throw new UnauthorizedException("Refresh token has expired");
         }
 
         User user = storedToken.getUser();
+
+        // Delete old refresh token
         refreshTokenRepository.delete(storedToken);
+
+        // Create new access + refresh token
         return buildLoginResponse(user);
     }
 
     @Transactional
     public void logout(String refreshToken) {
-        refreshTokenRepository.findByToken(refreshToken).ifPresent(token -> {
-            token.setRevoked(true);
-            refreshTokenRepository.save(token);
-        });
+
+        refreshTokenRepository.findByToken(refreshToken)
+                .ifPresent(token -> {
+
+                    token.setRevoked(true);
+
+                    refreshTokenRepository.save(token);
+                });
     }
 
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
+
+        return userRepository.findAll()
+                .stream()
                 .map(this::toUserResponse)
                 .toList();
     }
 
     @Transactional
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("User not found");
-        }
-        refreshTokenRepository.deleteByUser_Id(id);
-        userRepository.deleteById(id);
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        // Delete refresh tokens belonging to the user first
+        refreshTokenRepository.deleteByUser_Id(user.getId());
+
+        // Then delete user
+        userRepository.delete(user);
     }
 
     @Transactional
-    public UserResponse updateUser(Long id, RegisterRequest request) {
+    public UserResponse updateUser(
+            Long id,
+            RegisterRequest request) {
+
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
         userRepository.findByEmail(request.getEmail())
-                .filter(existing -> !existing.getId().equals(id))
+                .filter(existing ->
+                        !existing.getId().equals(id))
                 .ifPresent(existing -> {
-                    throw new BadRequestException("Email already in use");
+                    throw new BadRequestException(
+                            "Email already in use");
                 });
 
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setRole(request.getRole());
 
-        if (request.getPassword() != null && !request.getPassword().isBlank()) {
-            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        if (request.getPassword() != null
+                && !request.getPassword().isBlank()) {
+
+            user.setPassword(
+                    passwordEncoder.encode(request.getPassword()));
         }
 
-        return toUserResponse(userRepository.save(user));
+        if (request.getRole() != null) {
+            user.setRole(request.getRole());
+        }
+
+        User updatedUser = userRepository.save(user);
+
+        return toUserResponse(updatedUser);
     }
 
     private LoginResponse buildLoginResponse(User user) {
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole());
-        String refreshTokenValue = createRefreshToken(user);
+
+        String accessToken =
+                jwtUtil.generateAccessToken(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getRole());
+
+        String refreshToken =
+                createRefreshToken(user);
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
-                .refreshToken(refreshTokenValue)
+                .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .expiresIn(jwtUtil.getExpirationMs())
                 .email(user.getEmail())
@@ -134,17 +187,25 @@ public class AuthService {
     }
 
     private String createRefreshToken(User user) {
-        RefreshToken refreshToken = RefreshToken.builder()
-                .token(UUID.randomUUID().toString())
-                .user(user)
-                .expiryDate(Instant.now().plusMillis(jwtProperties.getRefreshExpiration()))
-                .revoked(false)
-                .build();
 
-        return refreshTokenRepository.save(refreshToken).getToken();
+        RefreshToken refreshToken =
+                RefreshToken.builder()
+                        .token(UUID.randomUUID().toString())
+                        .user(user)
+                        .expiryDate(
+                                Instant.now().plusMillis(
+                                        jwtProperties.getRefreshExpiration()))
+                        .revoked(false)
+                        .build();
+
+        RefreshToken savedToken =
+                refreshTokenRepository.save(refreshToken);
+
+        return savedToken.getToken();
     }
 
     private UserResponse toUserResponse(User user) {
+
         return UserResponse.builder()
                 .id(user.getId())
                 .name(user.getName())
